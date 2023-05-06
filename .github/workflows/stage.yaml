@@ -51,8 +51,7 @@ jobs:
       - name: Deploy no Cloud Run
         run: |
           gcloud run deploy spot-frontend --image us-west1-docker.pkg.dev/${GCP_PROJECT_ID}/spotrepo/app:${GITHUB_SHA} 
-          --region 
-          us-west1 --platform managed --allow-unauthenticated
+          --region us-west1 --platform managed --allow-unauthenticated
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GITHUB_SHA: ${{ github.sha }}
