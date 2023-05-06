@@ -36,7 +36,6 @@ jobs:
             docker build -t us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }} .
             docker push us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }}
             rm gcp_sa_key.json
-
   deploy:
     needs: build_and_push
     runs-on: ubuntu-latest
