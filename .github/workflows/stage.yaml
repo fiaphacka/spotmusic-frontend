@@ -1,4 +1,4 @@
-name: CI Stage
+name: CI & CD Stage
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - stage
 
 jobs:
-  build_and_test:
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,3 +36,24 @@ jobs:
             docker build -t us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }} .
             docker push us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }}
             rm gcp_sa_key.json
+
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Instalar o Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Deploy no Cloud Run
+        run: |
+          gcloud run deploy spot-frontend --image us-west1-docker.pkg.dev/$GCP_PROJECT_ID/spotrepo/app:${GITHUB_SHA} 
+          --region 
+          us-west1 --platform managed --allow-unauthenticated
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GITHUB_SHA: ${{ github.sha }}
