@@ -31,7 +31,7 @@ jobs:
         run: |
             echo ${{ secrets.GCP_SA_KEY_BASE64 }} | base64 --decode > gcp_sa_key.json
             gcloud auth activate-service-account --key-file=gcp_sa_key.json
-            gcloud config set project Grupo 15
+            gcloud config set project grupo-15-384916
             gcloud auth configure-docker us-west1-docker.pkg.dev
             docker build -t us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }} .
             docker push us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }}
