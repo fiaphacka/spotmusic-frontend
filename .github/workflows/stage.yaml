@@ -1,0 +1,56 @@
+name: CI & CD Stage
+
+on:
+  push:
+    branches:
+      - stage
+  pull_request:
+    branches:
+      - stage
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Rodar testes
+        run: npm test
+
+      - name: Build and push Docker image
+        run: |
+            echo ${{ secrets.GCP_SA_KEY_BASE64 }} | base64 --decode > gcp_sa_key.json
+            gcloud auth activate-service-account --key-file=gcp_sa_key.json
+            gcloud config set project grupo-15-384916
+            gcloud auth configure-docker us-west1-docker.pkg.dev
+            docker build -t us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }} .
+            docker push us-west1-docker.pkg.dev/grupo-15-384916/spotrepo/app:${{ github.sha }}
+            rm gcp_sa_key.json
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Instalar o Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3.0
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY_BASE64 }}
+          export_default_credentials: true
+
+      - name: Deploy no Cloud Run
+        run: |
+          gcloud run deploy spot-frontend --image us-west1-docker.pkg.dev/${GCP_PROJECT_ID}/spotrepo/app:${GITHUB_SHA} --region us-west1 --port 80 --platform managed --allow-unauthenticated
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GITHUB_SHA: ${{ github.sha }}
